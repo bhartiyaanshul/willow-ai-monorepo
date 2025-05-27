@@ -1,10 +1,10 @@
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 import uvicorn
 from stt import listen
 from chatbot import get_bot_response
-from tts import speak
+from tts import speak, text_to_speech
 
 app = FastAPI()
 
@@ -39,9 +39,12 @@ async def websocket_endpoint(websocket: WebSocket):
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
 
-@app.get("/talk")
-def talk():
-    user_text = listen()
+@app.post("/talk")
+async def talk(request: Request):
+    data = await request.json()
+    user_text = data.get("message")
+
     bot_reply = get_bot_response(user_text)
-    output_file = speak(bot_reply)
-    return FileResponse(output_file, media_type="audio/wav")
+    audio_path = text_to_speech(bot_reply)
+
+    return FileResponse(audio_path, media_type="audio/wav", filename="reply.wav")

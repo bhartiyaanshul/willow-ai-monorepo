@@ -1,8 +1,9 @@
-# backend/tts.py
-from TTS.api import TTS
+import pyttsx3
+import uuid
 
-tts = TTS(model_name="tts_models/en/ljspeech/tacotron2-DDC", progress_bar=False, gpu=False)
-
-def speak(text, filename="output.wav"):
-    tts.tts_to_file(text=text, file_path=filename)
+def text_to_speech(text):
+    filename = f"reply_{uuid.uuid4().hex}.wav"
+    engine = pyttsx3.init()
+    engine.save_to_file(text, filename)
+    engine.runAndWait()
     return filename

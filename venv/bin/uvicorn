@@ -1,4 +1,4 @@
-#!/Users/anshulbhartiya/Desktop/Projects/willow-ai/venv/bin/python3
+#!/Users/anshulbhartiya/Desktop/Projects/willow-ai/venv/bin/python3.10
 # -*- coding: utf-8 -*-
 import re
 import sys

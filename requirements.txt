@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+websockets
+pydantic
+vosk
+TTS
+stt
+openai
+sounddevice

@@ -10,7 +10,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # React dev server
+    allow_origins=["http://localhost:3000", "http://localhost:5173"],  # React dev server (Vite and CRA)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -36,15 +36,27 @@ async def websocket_endpoint(websocket: WebSocket):
             print("❌ Error:", e)
             break
 
+@app.options("/talk")
+async def options_talk():
+    return {}
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
 
 @app.post("/talk")
 async def talk(request: Request):
+    print("🔊 Received POST request to /talk")
     data = await request.json()
     user_text = data.get("message")
+    if not user_text:
+        return {"error": "No message provided"}
+    print("👤 User said:", user_text)
 
     bot_reply = get_bot_response(user_text)
     audio_path = text_to_speech(bot_reply)
 
     return FileResponse(audio_path, media_type="audio/wav", filename="reply.wav")
+    # bot_reply = "This is a mock response from the bot."
+    # audio_path = speak(bot_reply)
+    # print("🤖 Bot replied:", bot_reply)
+    # return FileResponse(audio_path, media_type="audio/wav", filename="reply.wav")

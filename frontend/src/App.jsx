@@ -1,10 +1,14 @@
 // src/App.js
+// Main React component for WillowAI frontend
+// Handles chat UI, user input, bot responses, error handling, and transcript logging
+
 import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import Leads from './Leads';
 import ReactPlayer from 'react-player/youtube';
 
 function App() {
+  // --- State variables ---
   const [input, setInput] = useState('');
   const [botReply, setBotReply] = useState('');
   const [leadData, setLeadData] = useState({});
@@ -15,19 +19,19 @@ function App() {
   const [typing, setTyping] = useState(false);
   const [displayedBotText, setDisplayedBotText] = useState('');
   const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [error, setError] = useState(null); // For user-friendly error banners
   const chatBubbleRef = useRef(null);
   const audioRef = useRef(null);
-  // Inactivity timer ref
   const inactivityTimer = useRef(null);
 
+  // --- Scroll chat to bottom on new message ---
   useEffect(() => {
-    // Scroll chat to bottom ONLY when a new message is added (not on typing effect)
     if (chatBubbleRef.current) {
       chatBubbleRef.current.scrollTop = chatBubbleRef.current.scrollHeight;
     }
   }, [conversation]);
 
-  // Typing effect for bot reply
+  // --- Typing effect for bot reply ---
   useEffect(() => {
     if (botReply && typing) {
       let i = 0;
@@ -39,57 +43,65 @@ function App() {
           clearInterval(interval);
           setTyping(false);
         }
-      }, 35); // typing speed
+      }, 35);
       return () => clearInterval(interval);
     }
   }, [botReply, typing]);
 
-  // Show 'AI is thinking...' when AI is typing, and 'Listening to you..' when user is speaking
+  // --- UI state helpers ---
   const showThinking = typing && !isListening;
-
-  // Show 'Waiting for Willow...' when waiting for a bot response (after user sends, before bot reply arrives)
   const waitingForBot = conversation.length > 0 && conversation[conversation.length - 1].sender === 'user' && !typing && !isListening;
 
+  // --- Send user message to backend and handle response ---
   const sendMessage = async () => {
     if (!input.trim()) return;
-    // Instantly show user message in chat
     setConversation((prev) => [...prev, { sender: 'user', text: input }]);
-    setInput(''); // Clear input immediately after sending
+    logTranscript('user', input);
+    setInput('');
     await sendToBackend(input);
   };
 
-  // Helper to send text to backend and handle audio/text response
+  // --- Helper to send text to backend and handle audio/text response ---
   const sendToBackend = async (text) => {
-    const response = await fetch('http://localhost:8000/talk', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text }),
-    });
-    const data = await response.json();
-    setShowImage(data.showImage);
-    setLeadData(data.lead);
-    setEnd(data.end);
-    setBotReply(data.reply);
-    setTyping(true);
-    setConversation((prev) => [...prev, { sender: 'bot', text: data.reply }]);
-    // Play audio (ensure full backend URL)
-    if (data.audio_url) {
-      const backendUrl = 'http://localhost:8000';
-      const audioUrl = data.audio_url.startsWith('http') ? data.audio_url : backendUrl + data.audio_url;
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
+    setError(null); // Clear previous errors
+    try {
+      const response = await fetch('http://localhost:8000/talk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
+      });
+      if (!response.ok) {
+        throw new Error('Backend error: ' + response.statusText);
       }
-      const audio = new Audio(audioUrl);
-      audioRef.current = audio;
-      audio.play();
+      const data = await response.json();
+      setShowImage(data.showImage);
+      setLeadData(data.lead);
+      setEnd(data.end);
+      setBotReply(data.reply);
+      setTyping(true);
+      setConversation((prev) => [...prev, { sender: 'bot', text: data.reply }]);
+      logTranscript('bot', data.reply);
+      // Play audio (ensure full backend URL)
+      if (data.audio_url) {
+        const backendUrl = 'http://localhost:8000';
+        const audioUrl = data.audio_url.startsWith('http') ? data.audio_url : backendUrl + data.audio_url;
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.currentTime = 0;
+        }
+        const audio = new Audio(audioUrl);
+        audioRef.current = audio;
+        audio.play();
+      }
+      setYoutubeUrl(data.youtube_url || '');
+      setInput('');
+    } catch (err) {
+      setError('Could not reach Willow backend. Please check your connection and try again.');
+      setTyping(false);
     }
-    // If backend returns a youtube_url, set it
-    setYoutubeUrl(data.youtube_url || '');
-    setInput('');
   };
 
-  // Speech-to-text (STT) handler
+  // --- Speech-to-text (STT) handler ---
   const handleSpeechInput = () => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -105,16 +117,16 @@ function App() {
       };
       recognition.onerror = (event) => {
         setIsListening(false);
-        console.error('Speech recognition error:', event.error);
+        setError('Speech recognition error: ' + event.error);
       };
       recognition.onend = () => setIsListening(false);
       recognition.start();
     } else {
-      alert('Speech recognition is not supported in this browser.');
+      setError('Speech recognition is not supported in this browser.');
     }
   };
 
-  // End conversation and store lead if user says 'bye', 'ok bye', 'thank you', etc.
+  // --- End conversation and store lead if user says 'bye', etc. ---
   useEffect(() => {
     if (conversation.length > 0) {
       const lastMsg = conversation[conversation.length - 1];
@@ -130,16 +142,16 @@ function App() {
     }
   }, [conversation]);
 
-  // Store lead in localStorage ONLY when backend ends chat and provides summary
+  // --- Store lead in localStorage ONLY when backend ends chat and provides summary ---
   useEffect(() => {
     async function fetchLeadIfEnded() {
       if (end) {
-        // Fetch the lead from the backend /lead endpoint
         try {
           const response = await fetch('http://localhost:8000/lead', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
           });
+          if (!response.ok) throw new Error('Backend error: ' + response.statusText);
           const data = await response.json();
           if (data.lead && data.lead.summary) {
             const prev = JSON.parse(localStorage.getItem('willow_leads') || '[]');
@@ -148,14 +160,14 @@ function App() {
             }
           }
         } catch (e) {
-          // Optionally handle error
+          setError('Could not save lead. Please try again.');
         }
       }
     }
     fetchLeadIfEnded();
   }, [end]);
 
-  // Restore chat/lead from localStorage if within 5 min
+  // --- Restore chat/lead from localStorage if within 5 min ---
   useEffect(() => {
     const saved = localStorage.getItem('willow_chat_state');
     if (saved) {
@@ -165,13 +177,12 @@ function App() {
         setLeadData(leadData || {});
         setEnd(!!end);
       } else {
-        // Too old, clear
         localStorage.removeItem('willow_chat_state');
       }
     }
   }, []);
 
-  // Persist chat/lead to localStorage on every update
+  // --- Persist chat/lead to localStorage on every update ---
   useEffect(() => {
     localStorage.setItem(
       'willow_chat_state',
@@ -184,10 +195,10 @@ function App() {
     );
   }, [conversation, leadData, end]);
 
-  // Inactivity timer: clear after 5 min of inactivity
+  // --- Inactivity timer: clear after 5 min of inactivity ---
   useEffect(() => {
     if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
-    if (conversation.length === 0 && !input) return; // Don't start timer if nothing in chat
+    if (conversation.length === 0 && !input) return;
     inactivityTimer.current = setTimeout(() => {
       setConversation([]);
       setLeadData({});
@@ -197,12 +208,36 @@ function App() {
       setDisplayedBotText('');
       localStorage.removeItem('willow_chat_state');
       fetch('http://localhost:8000/reset', { method: 'POST' });
-    }, 300000); // 5 min
+    }, 300000);
     return () => clearTimeout(inactivityTimer.current);
   }, [conversation, input]);
 
+  // --- Log transcript to localStorage for review/recovery ---
+  function logTranscript(sender, text) {
+    const prev = JSON.parse(localStorage.getItem('willow_transcript') || '[]');
+    const entry = { sender, text, timestamp: new Date().toISOString() };
+    localStorage.setItem('willow_transcript', JSON.stringify([...prev, entry]));
+  }
+
+  // --- Retry handler for backend errors ---
+  const handleRetry = () => {
+    setError(null);
+    if (conversation.length > 0 && conversation[conversation.length - 1].sender === 'user') {
+      sendToBackend(conversation[conversation.length - 1].text);
+    }
+  };
+
+  // --- Render UI ---
   return (
     <div className="willow-app">
+      {/* Error banner for user-friendly error messages */}
+      {error && (
+        <div className="error-banner">
+          {error}
+          <button onClick={handleRetry} className="retry-btn">Retry</button>
+          <button onClick={() => setError(null)} className="close-btn">&times;</button>
+        </div>
+      )}
       <header className="willow-header">
         <div className="willow-logo">
           <span className="willow-logo-mark">\</span> willow.
@@ -222,7 +257,7 @@ function App() {
               const data = await response.json();
               console.log('Lead data:', data);
               // If the backend returns a lead with summary, store it in localStorage
-              
+
               if (data.lead && data.lead.summary) {
                 const prev = JSON.parse(localStorage.getItem('willow_leads') || '[]');
                 if (!prev.length || prev[prev.length - 1].summary !== data.lead.summary) {

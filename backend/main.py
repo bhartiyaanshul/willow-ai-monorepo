@@ -11,6 +11,7 @@ import logging
 import httpx
 import os
 from dotenv import load_dotenv
+from datetime import datetime
 
 app = FastAPI()
 
@@ -22,10 +23,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- Logging Setup ---
+# Log all interactions and errors to a file for review and compliance
+logging.basicConfig(
+    filename="interaction.log",
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s"
+)
+
+def log_interaction(role, text):
+    """Log every user/bot message for review and compliance."""
+    logging.info(f"{role.upper()}: {text}")
+
 # Simple in-memory state for demo (use a database or session in production)
 conversation_state = {
     "step": 0,
-    "lead": {}
+    "lead": {},
+    # Store the full transcript for review and recovery
+    "history": []
 }
 
 qualifying_questions = [
@@ -92,16 +107,20 @@ async def reset():
 
 @app.post("/lead")
 async def get_lead(request: Request):
-    data = await request.json()
-    user_text = (data.get("message") or "").strip()
-    lead = conversation_state.get("lead", {})
-    # If a message is provided, treat this as a lead finalization request
-    if user_text:
-        # Compose a summary prompt for Gemini
-        conversation_str = "\n".join([
-            ("User: " + h["text"]) if h["role"] == "user" else ("Jane: " + h["text"]) for h in conversation_state["history"]
-        ])
-        summary_prompt = f"""
+    """
+    Endpoint to finalize and fetch the lead summary. Handles errors and logs all actions.
+    """
+    try:
+        data = await request.json()
+        user_text = (data.get("message") or "").strip()
+        lead = conversation_state.get("lead", {})
+        # If a message is provided, treat this as a lead finalization request
+        if user_text:
+            # Compose a summary prompt for Gemini
+            conversation_str = "\n".join([
+                ("User: " + h["text"]) if h["role"] == "user" else ("Jane: " + h["text"]) for h in conversation_state["history"]
+            ])
+            summary_prompt = f"""
 Summarize this sales conversation in 5-6 sentences for a human sales agent. Include:
 - The user's name, company, and role (if provided)
 - The user's requirements and main problem
@@ -123,48 +142,51 @@ Now, output a JSON object with the following fields: company, domain, problem, b
   "agent_summary": ...
 }}
 """
-        gemini_json = await get_gemini_reply(summary_prompt)
-        if not gemini_json:
-            bot_reply = "Sorry, the AI backend is currently unavailable. Please try again later."
+            gemini_json = await get_gemini_reply(summary_prompt)
+            if not gemini_json:
+                bot_reply = "Sorry, the AI backend is currently unavailable. Please try again later."
+                log_interaction("bot", bot_reply)
+                return JSONResponse({
+                    "reply": bot_reply,
+                    "lead": None,
+                    "end": True
+                })
+            import json
+            try:
+                lead_summary = json.loads(gemini_json)
+            except Exception:
+                lead_summary = {
+                    "summary": gemini_json,
+                    "conversation": conversation_state["history"][:],
+                    "user_last_message": user_text,
+                    "company": lead.get("company"),
+                    "domain": lead.get("domain"),
+                    "problem": lead.get("problem"),
+                    "budget": lead.get("budget"),
+                    "agent_summary": None
+                }
+            lead_summary["conversation"] = conversation_state["history"][:]
+            conversation_state["lead"] = lead_summary
+            bot_reply = "Thank you for chatting with Willow AI! I've summarized your requirements for our team. Have a great day!"
+            conversation_state["history"].append({"role": "bot", "text": bot_reply})
+            log_interaction("bot", bot_reply)
+            lead_summary["conversation"] = conversation_state["history"][:]
             return JSONResponse({
                 "reply": bot_reply,
-                "lead": None,
-                "end": True
+                "showImage": False,
+                "lead": lead_summary,
+                "end": True,
+                "youtube_url": None
             })
-        import json
-        try:
-            lead_summary = json.loads(gemini_json)
-        except Exception:
-            # fallback: just use summary as before
-            lead_summary = {
-                "summary": gemini_json,
-                "conversation": conversation_state["history"][:],
-                "user_last_message": user_text,
-                "company": lead.get("company"),
-                "domain": lead.get("domain"),
-                "problem": lead.get("problem"),
-                "budget": lead.get("budget"),
-                "agent_summary": None
-            }
-        lead_summary["conversation"] = conversation_state["history"][:]
-        conversation_state["lead"] = lead_summary
-        bot_reply = "Thank you for chatting with Willow AI! I've summarized your requirements for our team. Have a great day!"
-        conversation_state["history"].append({"role": "bot", "text": bot_reply})
-        lead_summary["conversation"] = conversation_state["history"][:]
-        summary_filename = f"lead_summary_{random.randint(1000,9999)}.txt"
-        summary_path = _os.path.join(audio_dir, summary_filename)
-        with open(summary_path, "w") as f:
-            f.write(lead_summary.get("summary", ""))
+        # Otherwise, just return the current lead
+        return JSONResponse({"lead": lead})
+    except Exception as e:
+        logging.error(f"/lead endpoint error: {e}")
         return JSONResponse({
-            "reply": bot_reply,
-            "summary_file": f"/audio/{summary_filename}",
-            "showImage": False,
-            "lead": lead_summary,
-            "end": True,
-            "youtube_url": None
+            "reply": "Sorry, something went wrong. Please try again later.",
+            "lead": None,
+            "end": True
         })
-    # Otherwise, just return the current lead
-    return JSONResponse({"lead": lead})
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
@@ -397,27 +419,33 @@ def speak(text):
 
 @app.post("/talk")
 async def talk(request: Request):
-    data = await request.json()
-    user_text = (data.get("message") or "").strip()
-    step = conversation_state["step"]
-    lead = conversation_state["lead"]
+    """
+    Main conversational endpoint. Handles user input, manages state, logs all interactions,
+    and recovers gracefully from errors or interruptions.
+    """
+    try:
+        data = await request.json()
+        user_text = (data.get("message") or "").strip()
+        step = conversation_state["step"]
+        lead = conversation_state["lead"]
 
-    if user_text:
-        conversation_state["history"].append({"role": "user", "text": user_text})
-    # Only keep last 10 turns
-    conversation_state["history"] = conversation_state["history"][-10:]
+        if user_text:
+            conversation_state["history"].append({"role": "user", "text": user_text})
+            log_interaction("user", user_text)
+        # Only keep last 10 turns for LLM context, but log full transcript
+        conversation_state["history"] = conversation_state["history"][-10:]
 
-    # Detect end-of-conversation intent
-    end_keywords = [
-        "bye", "ok bye", "thank you", "thankyou", "thanks", "see you", "goodbye", "talk later", "end chat", "end conversation", "that's all", "done", "finish", "no more", "that's it"
-    ]
-    user_text_lower = user_text.lower()
-    if any(kw in user_text_lower for kw in end_keywords):
-        # Compose a summary prompt for Gemini
-        conversation_str = "\n".join([
-            ("User: " + h["text"]) if h["role"] == "user" else ("Jane: " + h["text"]) for h in conversation_state["history"]
-        ])
-        summary_prompt = f"""
+        # Detect end-of-conversation intent
+        end_keywords = [
+            "bye", "ok bye", "thank you", "thankyou", "thanks", "see you", "goodbye", "talk later", "end chat", "end conversation", "that's all", "done", "finish", "no more", "that's it"
+        ]
+        user_text_lower = user_text.lower()
+        if any(kw in user_text_lower for kw in end_keywords):
+            # Compose a summary prompt for Gemini
+            conversation_str = "\n".join([
+                ("User: " + h["text"]) if h["role"] == "user" else ("Jane: " + h["text"]) for h in conversation_state["history"]
+            ])
+            summary_prompt = f"""
 Summarize this sales conversation in 5-6 sentences for a human sales agent. Include:
 - The user's name, company, and role (if provided)
 - The user's requirements and main problem
@@ -439,63 +467,100 @@ Now, output a JSON object with the following fields: company, domain, problem, b
   "agent_summary": ...
 }}
 """
-        gemini_json = await get_gemini_reply(summary_prompt)
-        if not gemini_json:
-            bot_reply = "Sorry, the AI backend is currently unavailable. Please try again later."
+            gemini_json = await get_gemini_reply(summary_prompt)
+            if not gemini_json:
+                bot_reply = "Sorry, the AI backend is currently unavailable. Please try again later."
+                log_interaction("bot", bot_reply)
+                return JSONResponse({
+                    "reply": bot_reply,
+                    "lead": None,
+                    "end": True
+                })
+            import json
+            try:
+                lead_summary = json.loads(gemini_json)
+            except Exception:
+                # fallback: just use summary as before
+                lead_summary = {
+                    "summary": gemini_json,
+                    "conversation": conversation_state["history"][:],
+                    "user_last_message": user_text,
+                    "company": lead.get("company"),
+                    "domain": lead.get("domain"),
+                    "problem": lead.get("problem"),
+                    "budget": lead.get("budget"),
+                    "agent_summary": None
+                }
+            lead_summary["conversation"] = conversation_state["history"][:]
+            conversation_state["lead"] = lead_summary
+            bot_reply = "Thank you for chatting with Willow AI! I've summarized your requirements for our team. Have a great day!"
+            conversation_state["history"].append({"role": "bot", "text": bot_reply})
+            log_interaction("bot", bot_reply)
+            lead_summary["conversation"] = conversation_state["history"][:]
             return JSONResponse({
                 "reply": bot_reply,
-                "lead": None,
-                "end": True
+                "showImage": False,
+                "lead": lead_summary,
+                "end": True,
+                "youtube_url": None
             })
-        import json
-        try:
-            lead_summary = json.loads(gemini_json)
-        except Exception:
-            # fallback: just use summary as before
-            lead_summary = {
-                "summary": gemini_json,
-                "conversation": conversation_state["history"][:],
-                "user_last_message": user_text,
-                "company": lead.get("company"),
-                "domain": lead.get("domain"),
-                "problem": lead.get("problem"),
-                "budget": lead.get("budget"),
-                "agent_summary": None
-            }
-        lead_summary["conversation"] = conversation_state["history"][:]
-        conversation_state["lead"] = lead_summary
-        bot_reply = "Thank you for chatting with Willow AI! I've summarized your requirements for our team. Have a great day!"
-        conversation_state["history"].append({"role": "bot", "text": bot_reply})
-        lead_summary["conversation"] = conversation_state["history"][:]
-        summary_filename = f"lead_summary_{random.randint(1000,9999)}.txt"
-        summary_path = _os.path.join(audio_dir, summary_filename)
-        with open(summary_path, "w") as f:
-            f.write(lead_summary.get("summary", ""))
-        return JSONResponse({
-            "reply": bot_reply,
-            "summary_file": f"/audio/{summary_filename}",
-            "showImage": False,
-            "lead": lead_summary,
-            "end": True,
-            "youtube_url": None
-        })
 
-    # Build conversation string for Gemini
-    conversation_str = "\n".join([
-        ("User: " + h["text"]) if h["role"] == "user" else ("Jane: " + h["text"]) for h in conversation_state["history"]
-    ])
+        # Build conversation string for Gemini
+        conversation_str = "\n".join([
+            ("User: " + h["text"]) if h["role"] == "user" else ("Jane: " + h["text"]) for h in conversation_state["history"]
+        ])
 
-    # If user asks for a video/demo, always provide a sample video link
-    import re
-    video_keywords = ["video", "demo", "show", "see", "sample"]
-    if any(kw in user_text.lower() for kw in video_keywords):
-        # Use a real or placeholder YouTube video link
-        sample_video_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"  # Replace with your real demo if available
-        bot_reply = (
-            f"Absolutely! Here's a quick demo video of Willow AI in action: {sample_video_url}\n"
-            "This video will show you how Willow AI engages leads, qualifies them, and books meetings in real time. Let me know if you have any questions after watching!"
-        )
+        # If user asks for a video/demo, always provide a sample video link
+        import re
+        video_keywords = ["video", "demo", "show", "see", "sample"]
+        if any(kw in user_text.lower() for kw in video_keywords):
+            sample_video_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+            bot_reply = (
+                f"Absolutely! Here's a quick demo video of Willow AI in action: {sample_video_url}\n"
+                "This video will show you how Willow AI engages leads, qualifies them, and books meetings in real time. Let me know if you have any questions after watching!"
+            )
+            conversation_state["history"].append({"role": "bot", "text": bot_reply})
+            log_interaction("bot", bot_reply)
+            audio_path = speak(bot_reply)
+            return JSONResponse({
+                "reply": bot_reply,
+                "audio_url": f"/audio/{audio_path}" if audio_path else None,
+                "showImage": False,
+                "lead": lead,
+                "end": False,
+                "youtube_url": sample_video_url
+            })
+
+        # Initial prompt for first message
+        if len(conversation_state["history"]) == 1:
+            prompt = f"""{SYSTEM_PROMPT}\n\nKnowledge Base:\n{KNOWLEDGE_BASE}\n\nConversation so far:\n{conversation_str}\nCurrent step: {step}\nCollected lead info: {lead}\nYour reply (be concise, human, and impactful):\n"""
+        else:
+            prompt = f"""{SYSTEM_PROMPT}\n\nKnowledge Base:\n{KNOWLEDGE_BASE}\n\nConversation so far:\n{conversation_str}\nCurrent step: {step}\nCollected lead info: {lead}\nYour reply (be concise, human, and impactful):\n"""
+
+        bot_reply = await get_gemini_reply(prompt)
+        if not bot_reply:
+            bot_reply = "Sorry, the AI backend is currently unavailable. Please try again later."
+            conversation_state["history"].append({"role": "bot", "text": bot_reply})
+            log_interaction("bot", bot_reply)
+            return JSONResponse({
+                "reply": bot_reply,
+                "audio_url": None,
+                "showImage": False,
+                "lead": lead,
+                "end": False,
+                "youtube_url": None
+            })
+
         conversation_state["history"].append({"role": "bot", "text": bot_reply})
+        log_interaction("bot", bot_reply)
+
+        # Detect YouTube video link in bot_reply (simple regex for demo)
+        youtube_url = None
+        yt_match = re.search(r'(https?://(?:www\.)?(?:youtube\.com|youtu\.be)/[\w\-?&=%.]+)', bot_reply)
+        if yt_match:
+            youtube_url = yt_match.group(1)
+
+        # Use TTS for the reply
         audio_path = speak(bot_reply)
         return JSONResponse({
             "reply": bot_reply,
@@ -503,43 +568,16 @@ Now, output a JSON object with the following fields: company, domain, problem, b
             "showImage": False,
             "lead": lead,
             "end": False,
-            "youtube_url": sample_video_url
+            "youtube_url": youtube_url
         })
-
-    # Initial prompt for first message
-    if len(conversation_state["history"]) == 1:
-        prompt = f"""{SYSTEM_PROMPT}\n\nKnowledge Base:\n{KNOWLEDGE_BASE}\n\nConversation so far:\n{conversation_str}\nCurrent step: {step}\nCollected lead info: {lead}\nYour reply (be concise, human, and impactful):\n"""
-    else:
-        prompt = f"""{SYSTEM_PROMPT}\n\nKnowledge Base:\n{KNOWLEDGE_BASE}\n\nConversation so far:\n{conversation_str}\nCurrent step: {step}\nCollected lead info: {lead}\nYour reply (be concise, human, and impactful):\n"""
-
-    bot_reply = await get_gemini_reply(prompt)
-    if not bot_reply:
-        bot_reply = "Sorry, the AI backend is currently unavailable. Please try again later."
-        conversation_state["history"].append({"role": "bot", "text": bot_reply})
+    except Exception as e:
+        # Catch-all for unexpected errors
+        logging.error(f"/talk endpoint error: {e}")
         return JSONResponse({
-            "reply": bot_reply,
+            "reply": "Sorry, something went wrong. Please try again later.",
             "audio_url": None,
             "showImage": False,
-            "lead": lead,
+            "lead": None,
             "end": False,
             "youtube_url": None
         })
-
-    conversation_state["history"].append({"role": "bot", "text": bot_reply})
-
-    # Detect YouTube video link in bot_reply (simple regex for demo)
-    youtube_url = None
-    yt_match = re.search(r'(https?://(?:www\.)?(?:youtube\.com|youtu\.be)/[\w\-?&=%.]+)', bot_reply)
-    if yt_match:
-        youtube_url = yt_match.group(1)
-
-    # Use TTS for the reply
-    audio_path = speak(bot_reply)
-    return JSONResponse({
-        "reply": bot_reply,
-        "audio_url": f"/audio/{audio_path}" if audio_path else None,
-        "showImage": False,
-        "lead": lead,
-        "end": False,
-        "youtube_url": youtube_url
-    })

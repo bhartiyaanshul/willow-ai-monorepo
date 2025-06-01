@@ -1,3 +1,7 @@
+// Leads.jsx
+// WillowAI Leads Dashboard
+// Shows saved leads, allows review and deletion, and handles errors gracefully
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './leads.css';
@@ -5,20 +9,32 @@ import './leads.css';
 function Leads() {
     const [leads, setLeads] = useState([]);
     const [selected, setSelected] = useState(null);
+    const [error, setError] = useState(null); // For error banners
     const navigate = useNavigate();
 
+    // Load leads from localStorage on mount
     useEffect(() => {
-        const stored = localStorage.getItem('willow_leads');
-        setLeads(stored ? JSON.parse(stored) : []);
+        try {
+            const stored = localStorage.getItem('willow_leads');
+            setLeads(stored ? JSON.parse(stored) : []);
+        } catch (e) {
+            setError('Could not load leads from localStorage.');
+        }
     }, []);
 
+    // Delete a lead and update localStorage
     const handleDelete = (idx) => {
-        const updated = leads.filter((_, i) => i !== idx);
-        setLeads(updated);
-        localStorage.setItem('willow_leads', JSON.stringify(updated));
-        if (selected === idx) setSelected(null);
+        try {
+            const updated = leads.filter((_, i) => i !== idx);
+            setLeads(updated);
+            localStorage.setItem('willow_leads', JSON.stringify(updated));
+            if (selected === idx) setSelected(null);
+        } catch (e) {
+            setError('Could not delete lead.');
+        }
     };
 
+    // Parse JSON summary if present
     function getParsedLead(selectedLead) {
         if (!selectedLead) return selectedLead;
         let parsed = { ...selectedLead };
@@ -26,15 +42,25 @@ function Leads() {
             try {
                 const jsonStr = selectedLead.summary.replace(/^```json/, '').replace(/```$/, '').trim();
                 parsed = { ...parsed, ...JSON.parse(jsonStr) };
-            } catch (e) { }
+            } catch (e) {
+                // If parsing fails, just show as-is
+            }
         }
         return parsed;
     }
 
     const parsedLeads = leads.map(getParsedLead);
 
+    // --- Render UI ---
     return (
         <div className="leads-container">
+            {/* Error banner for user-friendly error messages */}
+            {error && (
+                <div className="error-banner">
+                    {error}
+                    <button onClick={() => setError(null)} className="close-btn">&times;</button>
+                </div>
+            )}
             <div className="leads-sidebar-fixed">
                 <div className="sidebar-header">
                     <div className="logo">Willow Leads Dashboard</div>

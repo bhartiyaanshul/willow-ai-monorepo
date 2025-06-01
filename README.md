@@ -8,10 +8,12 @@ WillowAI is an open-source, real-time voice SDR (Sales Development Representativ
 
 - 🎤 Real-time speech-to-text and text-to-speech.
 - 🤖 Conversational AI agent using OpenRouter.
-- 🔁 Supports full-duplex conversation flow (WIP).
+- 🔄 Supports full-duplex conversation flow (WIP).
 - 📋 Collects and summarizes lead information.
 - 💬 Text-based interface for testing and demos.
 - ⚡ Fast, low-latency interactions via REST/WebSocket.
+- 📝 Robust logging and transcript review for all interactions.
+- 🛡️ Graceful error handling and recovery in both backend and frontend.
 
 ---
 
@@ -25,6 +27,28 @@ WillowAI is an open-source, real-time voice SDR (Sales Development Representativ
 | TTS        | Coqui / Piper (configurable)  |
 | AI Engine  | OpenRouter (open-source LLMs) |
 | Streaming  | WebSockets (Planned)          |
+
+---
+
+## 🏗️ Architecture Overview
+
+**Backend (Python/FastAPI):**
+- Handles all AI, speech, and lead logic.
+- `/talk` endpoint: Accepts user messages, returns bot reply, audio, and lead data. Robust error handling and logs all interactions to `interaction.log`.
+- `/lead` endpoint: Returns lead summary after conversation ends.
+- `stt.py`, `tts.py`, `chatbot.py`: Each module logs transcripts for review and has robust error handling.
+- All user and bot messages are logged for audit and debugging.
+
+**Frontend (React):**
+- Main chat UI (`App.jsx`) with robust error handling, retry, and transcript logging to `localStorage`.
+- Leads dashboard (`Leads.jsx`) for reviewing and deleting saved leads, with error banners.
+- All user and bot messages are logged to `localStorage` for recovery and review.
+- UI gracefully handles backend interruptions and allows retry.
+
+**Logging & Transcripts:**
+- Backend logs all interactions to `interaction.log` and module-specific transcript logs.
+- Frontend logs all chat messages to `localStorage` (`willow_transcript`).
+- Leads are saved in `localStorage` (`willow_leads`).
 
 ---
 
@@ -42,34 +66,55 @@ WillowAI is an open-source, real-time voice SDR (Sales Development Representativ
 
 ### 🔧 Backend Setup
 
-```bash
+```zsh
 # Clone the repo
-git clone https://github.com/your-username/willow-ai.git
-cd willow-ai/backend
+$ git clone https://github.com/your-username/willow-ai.git
+$ cd willow-ai/backend
 
 # Create a virtual environment
-python -m venv venv
-source venv/bin/activate
+$ python -m venv venv
+$ source venv/bin/activate
 
 # Install dependencies
-pip install -r requirements.txt
+$ pip install -r requirements.txt
 
 # Run FastAPI server
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+$ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Frontend Setup
+### 🖥️ Frontend Setup
 
-```bash
-cd ../frontend
+```zsh
+$ cd ../frontend
 
 # Install dependencies
-npm install
+$ npm install
 
 # Run development server
-npm start
-
+$ npm start
 ```
 
+---
 
-Let me know when you’re ready to draft the `LICENSE` file or prepare for public deployment (e.g., Render, Railway, Vercel).
+## 📝 Logging, Error Handling, and Transcript Review
+
+- **Backend:**
+  - All user and bot messages, as well as errors, are logged to `backend/interaction.log`.
+  - Each module (`stt.py`, `tts.py`, `chatbot.py`) logs transcripts for review.
+  - Backend endpoints return user-friendly error messages and handle interruptions gracefully.
+- **Frontend:**
+  - All chat messages are logged to `localStorage` (`willow_transcript`).
+  - Leads are saved in `localStorage` (`willow_leads`).
+  - User-friendly error banners are shown for backend or local errors, with retry options.
+  - UI recovers from interruptions and allows users to retry failed actions.
+
+---
+
+## 🏁 Notes
+
+- For production deployment, see [Render](https://render.com/), [Railway](https://railway.app/), or [Vercel](https://vercel.com/).
+- For license or public deployment, please draft a `LICENSE` file.
+
+---
+
+For questions or contributions, open an issue or pull request!

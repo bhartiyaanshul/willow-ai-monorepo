@@ -127,6 +127,8 @@ https://drive.google.com/file/d/1_ALokcO0k9Q0dB0OoVF4-_hidgorQMib/view?usp=shari
 <img width="1680" alt="Screenshot 2025-06-01 at 12 54 55 PM" src="https://github.com/user-attachments/assets/8ae0121c-7407-4b89-aae0-8dab84704510" />
 <img width="1680" alt="Screenshot 2025-06-01 at 12 58 06 PM" src="https://github.com/user-attachments/assets/402ef1fa-a52d-44f1-8f5d-cbb02fc6e8a2" />
 <img width="1680" alt="Screenshot 2025-06-01 at 12 58 16 PM" src="https://github.com/user-attachments/assets/5d382063-3962-47a8-ade8-0f9d070a9554" />
+<img width="1680" alt="Screenshot 2025-06-01 at 12 54 41 PM" src="https://github.com/user-attachments/assets/20db956c-f926-439c-9e73-ede39252e229" />
+
 
 ## 🧩 Extending WillowAI
 

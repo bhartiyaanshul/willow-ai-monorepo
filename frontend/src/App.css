@@ -1,35 +1,15 @@
 /* src/App.css */
-.App {
-  text-align: center;
-  padding: 2rem;
+body,
+html,
+#root,
+.willow-app {
+  width: 100vw;
+  min-width: 0;
+  max-width: 100vw;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
-textarea {
-  /* width: 100%; */
-  font-size: 16px;
-  padding: 0.5rem;
-}
-
-button {
-  padding: 0.5rem 1rem;
-  margin-top: 10px;
-  font-size: 16px;
-}
-
-.bot-response {
-  margin-top: 20px;
-  font-size: 18px;
-}
-
-.lead-form {
-  margin-top: 2rem;
-  text-align: left;
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-/* Modern, dark, conversational UI for Willow AI Voice SDR */
 body {
   background: radial-gradient(ellipse at 60% 0%, #2d193c 0%, #1a1027 100%);
   min-height: 100vh;
@@ -40,289 +20,466 @@ body {
 
 .willow-app {
   min-height: 100vh;
+  width: 100vw;
   display: flex;
   flex-direction: column;
+  background: radial-gradient(ellipse at 60% 0%, #2a1a3d 60%, #1a1027 100%);
 }
 
 .willow-header {
+  /* width: 100%; */
+  padding: 1.5rem 2.5rem 1rem;
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem 2.5rem 1rem 2.5rem;
-  background: #1a1027;
-  border-bottom: 1px solid #2d193c;
+  background: transparent;
 }
 
 .willow-logo {
-  font-size: 2rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
+  font-weight: bold;
+  font-size: 2.1rem;
   color: #fff;
+  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+}
+
+.willow-logo-mark {
+  font-size: 2.2rem;
+  color: #a97fff;
+  margin-right: 0.5rem;
 }
 
 .willow-help {
-  font-size: 1rem;
-  color: #b6a6d6;
-}
-
-.willow-help a {
-  color: #b6a6d6;
-  text-decoration: underline;
+  color: #fff;
+  font-size: 1.1rem;
 }
 
 .willow-main {
   flex: 1;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 2rem 0 0 0;
+  justify-content: center;
+  padding: 1rem 2rem;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100vw;
 }
 
 .willow-chat-container {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  background: rgba(40, 25, 60, 0.7);
-  border-radius: 18px;
-  box-shadow: 0 4px 32px 0 #00000033;
-  padding: 2.5rem 2.5rem 2rem 2.5rem;
-  margin-bottom: 2rem;
-  width: 90vw;
-  max-width: 1100px;
-  min-height: 350px;
-}
-
-.willow-avatar-section {
+  background: #291c3f;
+  border-radius: 20px;
+  padding: 1rem;
+  width: 100%;
+  max-width: 1000px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  margin-right: 2.5rem;
-}
-
-.willow-avatar img {
-  width: 180px;
-  height: 180px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 4px solid #3e2a5e;
-  background: #2d193c;
-}
-
-.willow-image-demo {
-  margin-top: 1.5rem;
-  text-align: center;
-}
-
-.willow-image-caption {
-  color: #b6a6d6;
-  font-size: 1rem;
-  margin-top: 0.5rem;
+  height: 80vh;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .willow-chat-bubble-section {
   flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-  gap: 1.2rem;
-  min-height: 180px;
-  max-height: 320px;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #6c4eb6 #24163a;
+  gap: 1rem;
+  border: 1px solid #3e2b57;
+  border-radius: 12px;
+  background: #1f1430;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
-.willow-chat-bubble-section::-webkit-scrollbar {
-  width: 8px;
-  background: #24163a;
-}
-
-.willow-chat-bubble-section::-webkit-scrollbar-thumb {
-  background: #6c4eb6;
-  border-radius: 8px;
-}
-
+.willow-user-bubble,
 .willow-bot-bubble {
-  background: #32224a;
-  color: #fff;
-  padding: 1.1rem 1.5rem;
-  border-radius: 16px 16px 16px 4px;
-  max-width: 600px;
-  font-size: 1.18rem;
-  align-self: flex-start;
-  box-shadow: 0 2px 12px 0 #00000022;
-  margin-bottom: 0.2rem;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  max-width: 80%;
+  line-height: 1.;
 }
 
 .willow-user-bubble {
-  background: #4e3a6d;
-  color: #fff;
-  padding: 1.1rem 1.5rem;
-  border-radius: 16px 16px 4px 16px;
-  max-width: 400px;
-  font-size: 1.1rem;
   align-self: flex-end;
-  margin-bottom: 0.2rem;
+  background: #7a5af5;
+  color: white;
 }
 
-.willow-listening {
-  margin-top: 1.2rem;
-  color: #b6a6d6;
-  font-size: 1.1rem;
-  background: #24163a;
-  border-radius: 12px;
-  padding: 0.5rem 1.2rem;
-  display: inline-block;
+.willow-bot-bubble {
   align-self: flex-start;
+  background: #3b2c54;
+  color: #f3f3f3;
+}
+
+.willow-bot-bubble-initial {
+  align-self: flex-start;
+  font-style: italic;
+  opacity: 0.75;
+  background: transparent;
+  color: #ccc;
+}
+
+.willow-input {
+  flex: 1;
+  padding: 1rem 1.6rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: #3e2b57;
+  color: #f3f3f3;
+  outline: none;
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
+  transition: background 0.3s ease;
 }
 
 .willow-bottom-bar {
   display: flex;
   align-items: center;
-  background: #24163a;
-  border-radius: 18px;
-  padding: 1.2rem 2rem;
-  margin: 0 auto 1.5rem auto;
-  width: 90vw;
-  max-width: 1100px;
-  box-shadow: 0 2px 12px 0 #00000022;
-  gap: 1.2rem;
+  gap: 0.5rem;
+  margin-top: 1rem;
 }
 
-.willow-user-avatar {
-  width: 48px;
-  height: 48px;
-  background: #1a1027;
-  border: 3px solid #6c4eb6;
-  color: #fff;
-  font-weight: 700;
-  font-size: 1.3rem;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 1rem;
-  letter-spacing: 0.05em;
-}
-
-.willow-mic,
-.willow-mic-active {
-  background: #32224a;
+.willow-send,
+.willow-mic {
+  background: #7a5af5;
+  color: white;
   border: none;
-  border-radius: 50%;
-  width: 48px;
-  height: 48px;
-  font-size: 1.5rem;
-  color: #b6a6d6;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 1rem;
+  border-radius: 8px;
+  padding: 1rem 1.4rem;
   cursor: pointer;
-  transition: background 0.2s;
+  font-size: 1rem;
 }
 
-.willow-mic-active {
-  background: #6c4eb6;
-  color: #fff;
-  animation: pulse 1.2s infinite;
-}
-
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 #6c4eb633;
-  }
-
-  70% {
-    box-shadow: 0 0 0 10px #6c4eb600;
-  }
-
-  100% {
-    box-shadow: 0 0 0 0 #6c4eb600;
-  }
-}
-
-.willow-input {
-  flex: 1;
-  background: #32224a;
-  border: none;
-  border-radius: 12px;
-  color: #fff;
-  font-size: 1.1rem;
-  padding: 0.9rem 1.2rem;
-  margin-right: 1rem;
-  outline: none;
-  transition: background 0.2s;
-}
-
-.willow-input:disabled {
-  background: #2d193c;
-  color: #b6a6d6;
-}
-
-.willow-send {
-  background: #6c4eb6;
-  color: #fff;
-  border: none;
-  border-radius: 12px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  padding: 0.9rem 2.2rem;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.willow-send:disabled {
-  background: #3e2a5e;
-  color: #b6a6d6;
+.willow-send:disabled,
+.willow-mic:disabled {
+  background: #a97fff;
   cursor: not-allowed;
 }
 
-.willow-lead-summary {
-  margin: 2.5rem auto 0 auto;
-  background: #24163a;
-  border-radius: 16px;
-  padding: 1.5rem 2rem;
-  max-width: 600px;
-  color: #b6a6d6;
-  font-size: 1.05rem;
-  box-shadow: 0 2px 12px 0 #00000022;
+.willow-user-avatar {
+  background: #a97fff;
+  color: white;
+  font-weight: bold;
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-@media (max-width: 900px) {
+.willow-mic-active {
+  background: linear-gradient(90deg, #a97fff 60%, #7a5af5 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 1rem 1.4rem;
+  cursor: pointer;
+  font-size: 1rem;
+  position: relative;
+  z-index: 1;
+  overflow: visible;
+}
 
-  .willow-chat-container,
-  .willow-bottom-bar {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 1.2rem 0.5rem;
-    max-width: 98vw;
+.willow-mic-active::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  border-radius: 12px;
+  z-index: -1;
+  background: linear-gradient(90deg, #a97fff 60%, #7a5af5 100%);
+  filter: blur(12px);
+  opacity: 0.7;
+  animation: willow-mic-bg-glow 1.2s infinite alternate;
+}
+
+@keyframes willow-mic-bg-glow {
+  0% {
+    opacity: 0.7;
+    filter: blur(12px);
   }
 
-  .willow-avatar-section {
-    margin-right: 0;
-    margin-bottom: 1.5rem;
+  100% {
+    opacity: 1;
+    filter: blur(20px);
   }
 }
 
-@media (max-width: 600px) {
+.willow-listening {
+  font-size: 0.9rem;
+  font-style: italic;
+  color: #bbb;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
 
-  .willow-header,
-  .willow-main {
-    padding: 0.5rem;
+.willow-listening-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #7a5af5;
+  border-radius: 50%;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+
+  0%,
+  100% {
+    opacity: 0.2;
   }
 
-  .willow-chat-container,
-  .willow-bottom-bar {
-    padding: 0.5rem;
+  50% {
+    opacity: 1;
   }
+}
 
-  .willow-lead-summary {
-    padding: 1rem 0.5rem;
-  }
+.willow-youtube-demo {
+  margin-top: 1rem;
+  align-self: center;
+}
 
-  .willow-avatar img {
-    width: 100px;
-    height: 100px;
-  }
+.willow-end-chat-btn {
+  background: #ff4d6d;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.8rem 1.6rem;
+  font-size: 1.08rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-right: 2.5rem;
+  transition: background 0.2s, color 0.2s;
+}
+
+.willow-end-chat-btn:hover {
+  background: #ff1a4d;
+  color: #fff;
+}
+
+/* Split layout for dashboard */
+.leads-dashboard.split-layout {
+  display: flex;
+  height: 100vh;
+  background: #f7f8fa;
+}
+
+.leads-list-panel {
+  width: 340px;
+  background: #fff;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+}
+
+.leads-header {
+  padding: 24px 24px 12px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.leads-logo {
+  font-weight: 700;
+  font-size: 1.3rem;
+  color: #6c47ff;
+  margin-right: 8px;
+}
+
+.leads-back {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #6c47ff;
+  font-weight: 500;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.leads-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 0 16px 0;
+}
+
+.lead-list-item {
+  padding: 18px 24px 14px 24px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  background: #fff;
+  transition: background 0.15s;
+}
+
+.lead-list-item:hover,
+.lead-list-item.selected {
+  background: #f5f3ff;
+}
+
+.lead-list-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lead-list-title {
+  font-weight: 600;
+  font-size: 1.08rem;
+  color: #222;
+}
+
+.lead-critical-dot {
+  color: #e11d48;
+  font-size: 1.1em;
+  margin-left: 4px;
+}
+
+.lead-list-meta {
+  margin-top: 6px;
+  display: flex;
+  gap: 10px;
+  font-size: 0.98rem;
+  color: #6b7280;
+  align-items: center;
+}
+
+.lead-list-status {
+  border-radius: 8px;
+  padding: 2px 10px;
+  font-size: 0.92em;
+  font-weight: 500;
+  background: #f3f4f6;
+  color: #6c47ff;
+}
+
+.lead-status-disqualified {
+  background: #fef2f2;
+  color: #e11d48;
+}
+
+.lead-status-qualified {
+  background: #f0fdf4;
+  color: #059669;
+}
+
+.lead-status-discovery {
+  background: #f3f4f6;
+  color: #6c47ff;
+}
+
+.lead-status-pending-review {
+  background: #fefce8;
+  color: #b45309;
+}
+
+.lead-list-budget {
+  font-weight: 500;
+}
+
+.lead-list-close {
+  font-size: 0.93em;
+  color: #9ca3af;
+}
+
+.leads-empty {
+  padding: 32px;
+  color: #bdbdbd;
+  text-align: center;
+}
+
+.lead-details-panel {
+  flex: 1;
+  padding: 40px 48px 32px 48px;
+  overflow-y: auto;
+  background: #f7f8fa;
+  display: flex;
+  flex-direction: column;
+}
+
+.lead-details-card {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 2px 12px 0 rgba(80, 80, 120, 0.07);
+  padding: 36px 36px 28px 36px;
+  max-width: 700px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.lead-details-header-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.lead-details-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #6c47ff;
+}
+
+.lead-delete {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #e11d48;
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 0 8px;
+}
+
+.lead-details-section {
+  margin-bottom: 18px;
+}
+
+.lead-details-label {
+  font-weight: 600;
+  color: #6b7280;
+  margin-right: 8px;
+}
+
+.lead-details-box {
+  background: #f7f8fa;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-top: 6px;
+  color: #222;
+  font-size: 1.04em;
+}
+
+.lead-meta-missing {
+  color: #bdbdbd;
+  font-style: italic;
+}
+
+.lead-details-placeholder {
+  color: #bdbdbd;
+  font-size: 1.2rem;
+  margin: auto;
+  text-align: center;
+}
+
+.lead-conversation-transcript {
+  background: #f3f4f6;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 6px;
+  max-height: 180px;
+  overflow-y: auto;
+  font-size: 0.98em;
+}
+
+.lead-conv-msg {
+  margin-bottom: 6px;
+}
+
+.lead-conv-role {
+  font-weight: 600;
+  margin-right: 6px;
+  color: #6c47ff;
 }

@@ -6,14 +6,16 @@ WillowAI is an open-source, real-time voice SDR (Sales Development Representativ
 
 ## 🎯 Features
 
-- 🎤 Real-time speech-to-text and text-to-speech.
-- 🤖 Conversational AI agent using OpenRouter.
-- 🔄 Supports full-duplex conversation flow (WIP).
-- 📋 Collects and summarizes lead information.
-- 💬 Text-based interface for testing and demos.
-- ⚡ Fast, low-latency interactions via REST/WebSocket.
-- 📝 Robust logging and transcript review for all interactions.
-- 🛡️ Graceful error handling and recovery in both backend and frontend.
+- 🎤 Real-time speech-to-text and text-to-speech
+- 🤖 Conversational AI agent using OpenRouter
+- 🔄 Full-duplex conversation flow (WIP)
+- 📋 Collects and summarizes lead information
+- 💬 Text-based interface for testing and demos
+- ⚡ Fast, low-latency interactions via REST/WebSocket
+- 📝 Robust logging and transcript review for all interactions
+- 🛡️ Graceful error handling and recovery in both backend and frontend
+- 💾 Persistent chat and lead storage (localStorage)
+- 🧑‍💻 Easy to extend and customize
 
 ---
 
@@ -24,7 +26,7 @@ WillowAI is an open-source, real-time voice SDR (Sales Development Representativ
 | Frontend   | React.js                      |
 | Backend    | FastAPI (Python 3.8+)         |
 | STT        | Whisper (OpenAI), Vosk        |
-| TTS        | Coqui / Piper (configurable)  |
+| TTS        | Coqui / Piper / gTTS          |
 | AI Engine  | OpenRouter (open-source LLMs) |
 | Streaming  | WebSockets (Planned)          |
 
@@ -66,32 +68,36 @@ WillowAI is an open-source, real-time voice SDR (Sales Development Representativ
 
 ### 🔧 Backend Setup
 
-```zsh
+```bash
 # Clone the repo
-$ git clone https://github.com/your-username/willow-ai.git
-$ cd willow-ai/backend
+git clone https://github.com/your-username/willow-ai.git
+cd willow-ai/backend
 
 # Create a virtual environment
-$ python -m venv venv
-$ source venv/bin/activate
+python -m venv venv
+source venv/bin/activate
 
 # Install dependencies
-$ pip install -r requirements.txt
+pip install -r requirements.txt
+
+# Download Vosk model (if using Vosk STT)
+wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
+unzip vosk-model-small-en-us-0.15.zip -d models/
 
 # Run FastAPI server
-$ uvicorn main:app --reload --host 0.0.0.0 --port 8000
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ### 🖥️ Frontend Setup
 
-```zsh
-$ cd ../frontend
+```bash
+cd ../frontend
 
 # Install dependencies
-$ npm install
+npm install
 
 # Run development server
-$ npm start
+npm start
 ```
 
 ---
@@ -110,10 +116,25 @@ $ npm start
 
 ---
 
+## 🧩 Extending WillowAI
+
+- Add new AI models or swap out TTS/STT engines by editing `backend/tts.py`, `backend/stt.py`, or `backend/chatbot.py`.
+- Customize the frontend UI in `frontend/src/App.jsx` and `frontend/src/Leads.jsx`.
+- Add new endpoints or business logic in `backend/main.py`.
+
+---
+
 ## 🏁 Notes
 
 - For production deployment, see [Render](https://render.com/), [Railway](https://railway.app/), or [Vercel](https://vercel.com/).
 - For license or public deployment, please draft a `LICENSE` file.
+- Contributions, bug reports, and feature requests are welcome!
+
+---
+
+## 📄 License
+
+This project is open-source. See `LICENSE` for details (to be added).
 
 ---
 
